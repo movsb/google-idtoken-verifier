@@ -20,11 +20,15 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Iss:\t%s\nSub:\t%s\nEmail:\t%s\nName:\t%s\n",
-		claims.Iss, claims.Sub, claims.Email, claims.Name)
+	fmt.Printf("Iss:\t%s\nSub:\t%s\nEmail:\t%s\nName:\t%s\nDomain:\t%s\n",
+		claims.Iss, claims.Sub, claims.Email, claims.Name, claims.Domain)
 }
 ```
 
 ## Features
 
-[All steps](https://developers.google.com/identity/sign-in/web/backend-auth#verify-the-integrity-of-the-id-token) are satisfied except the G Suit hosted domain (hd) verification.
+[All steps](https://developers.google.com/identity/sign-in/web/backend-auth#verify-the-integrity-of-the-id-token) described in Google Sign-In are satisfied.
+
+## G Suite
+
+If you are using G Suite, be sure that the `Domain` field matches your host suffix.
