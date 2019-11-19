@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"io/ioutil"
 	"math/big"
 	"net/http"
 	"regexp"
@@ -40,6 +41,24 @@ type Certs struct {
 // global unique google certs.
 var gCerts *Certs
 
+var GetCerts func(u string) (certs []byte, cacheControl string, err error) = getCerts
+
+func getCerts(u string) (certs []byte, cacheControl string, err error) {
+	// fetch certs
+	resp, err := http.Get(googleCertsURL)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return data, resp.Header.Get("Cache-Control"), nil
+}
+
 // listCerts lists google certs.
 func listCerts() (*Certs, error) {
 	// use cached
@@ -47,16 +66,14 @@ func listCerts() (*Certs, error) {
 		return gCerts, nil
 	}
 
-	// fetch certs
-	resp, err := http.Get(googleCertsURL)
+	certData, cacheControl, err := GetCerts(googleCertsURL)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	// respect cache-control
 	cacheAge := 5 * 60
-	if cacheControl := resp.Header.Get("Cache-Control"); cacheControl != "" {
+	if cacheControl != "" {
 		if matches := reMaxAge.FindStringSubmatch(cacheControl); len(matches) == 2 {
 			maxAge, err := strconv.ParseInt(matches[1], 10, 64)
 			if err == nil {
@@ -69,7 +86,7 @@ func listCerts() (*Certs, error) {
 	keysObj := struct {
 		Keys []Key `json:"keys"`
 	}{}
-	if err := json.NewDecoder(resp.Body).Decode(&keysObj); err != nil {
+	if err := json.Unmarshal(certData, &keysObj); err != nil {
 		return nil, err
 	}
 
